@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"> <!-- Added dir="rtl" for right-to-left language support -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- هذا هو وسم العنوان الذي يتحكم في عنوان علامة تبويب المتصفح -->
+    <title>زراعة أسيوط ZAIN</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to start to prevent content from being too high */
+            min-height: 100vh; /* Ensure it takes full viewport height */
+            padding: 2rem 1rem; /* Add some padding for smaller screens */
+        }
+
+        /* Specific styles for the input fields */
+        .result-input {
+            /* No specific appearance changes needed for number input */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-xl">
+        <h1 class="text-4xl font-extrabold text-center text-gray-800 mb-8">حساب الـ GPA علي ما تفرج</h1>
+
+        <!-- Department Selection Section -->
+        <div class="mb-8 p-6 bg-purple-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-purple-800 mb-4">اختر القسم</h2>
+            <select id="departmentSelect"
+                    class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 w-full">
+                <option value="">-- اختر القسم --</option>
+                <!-- Departments will be populated by JS -->
+            </select>
+        </div>
+
+        <!-- Subject Selection Section -->
+        <div class="mb-8 p-6 bg-blue-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">اختر مادة لإضافتها "مواد القسم و المواد الإختيارية"</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <select id="predefinedSubjectSelect"
+                        class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">اختر مادة</option>
+                    <!-- Options will be populated by JS based on department and optional subjects -->
+                </select>
+                <button id="addSelectedSubjectBtn"
+                        class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out shadow-md">
+                    أضف المادة المختارة
+                </button>
+            </div>
+        </div>
+
+        <!-- Subjects List Section -->
+        <div class="mb-8 p-6 bg-white rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">موادك المضافة --- متنساش تضيف كل موادك وتكتب مجموع كل مادة</h2>
+            <div id="subjectsList" class="space-y-4">
+                <!-- Subjects will be dynamically added here -->
+                <p id="noSubjectsMessage" class="text-gray-500 text-center">لم تتم إضافة أي مواد بعد. اختر مادة من القائمة أعلاه!</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="p-6 bg-green-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">نتائجك</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-green-200">
+                    <p class="text-xl font-semibold text-gray-700">GPA:</p>
+                    <p id="totalGPA" class="text-5xl font-extrabold text-green-600 mt-2">0.00</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-green-200">
+                    <p class="text-xl font-semibold text-gray-700">النسبة المئوية الإجمالية:</p>
+                    <p id="totalPercentage" class="text-5xl font-extrabold text-green-600 mt-2">0.00%</p>
+                </div>
+            </div>
+            <button id="calculateBtn"
+                    class="mt-6 w-full bg-green-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-green-700 transition duration-300 ease-in-out shadow-md">
+                ملحوظة - معتمد بنسبة 99% - اتأكد من كل المواد *مع تحيات العزبة* </button>
+        </div>
+    </div>
+
+    <script>
+        // Array to store subjects selected by the user: { id, name, creditHours, result }
+        let selectedSubjects = [];
+        let nextSubjectId = 0; // Unique ID for each subject added to selectedSubjects
+
+        // Common subjects that are always added
+        const commonSubjects = [
+            { name: 'تشريح نبات', creditHours: 3 },
+            { name: 'كيمياء عضوية', creditHours: 3 },
+            { name: 'حيوان عام', creditHours: 3 },
+            { name: 'أسس بساتين', creditHours: 3 },
+            { name: 'إنتاج حيواني', creditHours: 3 },
+            { name: 'أسس وراثة', creditHours: 3 },
+            { name: 'أسس اقتصاد', creditHours: 3 },
+            { name: 'تصنيف نبات', creditHours: 3 },
+            { name: 'أسس محاصيل', creditHours: 3 },
+            { name: 'أسس أراضي', creditHours: 3 },
+            { name: 'أسس دواجن', creditHours: 3 },
+            { name: 'أسس ألبان', creditHours: 3 },
+            { name: 'أسس صناعات', creditHours: 3 },
+            { name: 'أسس حشرات', creditHours: 3 },
+            { name: 'أسس مكافحة', creditHours: 3 },
+            { name: 'أسس أمراض نبات', creditHours: 3 },
+            { name: 'اجتماع ريفي', creditHours: 3 },
+            { name: 'احصاء زراعي', creditHours: 3 },
+            { name: 'إنجليزي ', creditHours: 2 },
+            { name: 'إرشاد زراعي', creditHours: 3 },
+            { name: 'محاسبة التكاليف', creditHours: 2 },
+            { name: 'تفاضل وتكامل', creditHours: 2 },
+            { name: 'إدارة', creditHours: 3 },
+            { name: 'بحوث ومناقشات 1', creditHours: 1 },
+            { name: 'بحوث ومناقشات 2', creditHours: 1 }
+        ];
+
+        // Optional subjects that can be chosen by the user
+        const optionalSubjects = [
+            { name: 'تربية نحل العسل وديدان القز', creditHours: 3 },
+            { name: 'جدوى وتقييم المشروعات الزراعية', creditHours: 3 },
+            { name: 'التنمية البشرية', creditHours: 3 },
+            { name: 'تنمية المرأة', creditHours: 3 },
+            { name: 'المزارع السمكية', creditHours: 3 },
+            { name: 'المشروعات اللبنية الصغيرة', creditHours: 3 },
+            { name: 'دراسات سكانية', creditHours: 3 }
+        ];
+
+        // Predefined list of subjects organized by department
+        const departmentsData = {
+            ' ♡الوراثة': {
+                subjects: [
+                    { name: 'كيمياء تحليلية', creditHours: 3 },
+                    { name: 'كيمياء حيوية زراعية', creditHours: 3 },
+                    { name: 'الوراثة السيتولوجية والتكنيك الوراثى', creditHours: 3 },
+                    { name: 'وراثة المناعة', creditHours: 3 },
+                    { name: 'الهندسة الوراثية', creditHours: 3 },
+                    { name: 'الوراثة وبيولوجيا الخلية', creditHours: 3 },
+                    { name: 'الوراثة و زراعة الانسجة', creditHours: 3 },
+                    { name: 'وراثة جزيئية', creditHours: 3 },
+                    { name: 'وراثة كائنات دقيقة', creditHours: 3 },
+                    { name: 'وراثة طفرات', creditHours: 3 },
+                    { name: 'تصميم تجارب', creditHours: 2 }
+                ],
+                autoSelectNames: ['الوراثة السيتولوجية والتكنيك الوراثى', 'وراثة المناعة'] // Example auto-select for this dept
+            },
+            'علوم الأغذية': {
+                subjects: [
+                    { name: 'كيمياء حيوية زراعية', creditHours: 3 },
+                    { name: 'بكتريولوجيا زراعية', creditHours: 3 },
+                    { name: 'التخمرات الصناعية و اللبنية', creditHours: 3 },
+                    { name: 'كيمياء وتحليل الاغذية و الالبان', creditHours: 3 },
+                    { name: 'تكنولوجيا منتجات الالبان', creditHours: 3 },
+                    { name: 'ميكروبيولوجيا الاغذية', creditHours: 3 },
+                    { name: 'وراثة كائنات دقيقة', creditHours: 3 },
+                    { name: 'هندسة مصانع الاغذية و الالبان', creditHours: 3 },
+                    { name: 'كيمياء تحليلية', creditHours: 3 },
+                    { name: 'انتاج محاصيل خاص', creditHours: 3 },
+                    { name: 'ميكروبيولوجيا الالبان', creditHours: 3 },
+                    { name: 'كيمياء الالبان', creditHours: 3 },
+                    { name: 'تكنولوجيا الزيوت والدهون', creditHours: 3 },
+                    { name: 'تكنولوجيا المنتجات الخاصة', creditHours: 3 }
+                ],
+                autoSelectNames: ['تكنولوجيا منتجات الالبان', 'ميكروبيولوجيا الاغذية'] // Example auto-select for this dept
+            },
+            'قسم حشرات': {
+                subjects: [
+                    { name: 'انتاج محاصيل حقلية خاص', creditHours: 3 },
+                    { name: 'انتاج محاصيل بستانية خاص', creditHours: 3 },
+                    { name: 'ارصاد جوية زراعية', creditHours: 3 },
+                    { name: 'اسس تربية النبات', creditHours: 3 },
+                    { name: 'تصميم تجارب', creditHours: 2 },
+                    { name: 'كيمياء حيوية زراعية', creditHours: 3 },
+                    { name: 'وراثة جزيئية', creditHours: 3 },
+                    { name: 'ميكروبيولوجيا زراعية', creditHours: 3 },
+                    { name: 'فسيولوجيا وتقسيم الفطريات الممرضة للنبات', creditHours: 3 },
+                    { name: 'البكتريا و الفيروسات الممرضة للنبات', creditHours: 3 },
+                    { name: 'حشرات اقتصادية', creditHours: 3 },
+                    { name: 'كيمياء المبيدات الحشرية', creditHours: 3 },
+                    { name: 'تربية نحل العسل وديدان القز', creditHours: 3 },
+                    { name: 'آفات حيوانية زراعية', creditHours: 3 },
+                    { name: 'بيئة الحشرات الاقتصادية', creditHours: 3 },
+                    { name: 'فسيولوجيا حشرات', creditHours: 3 },
+                    { name: 'آفات المخازن والمصانع', creditHours: 3 },
+                    { name: 'المكافحة الحيوية للافات', creditHours: 3 },
+                    { name: 'الحشرات الناقلة للامراض النباتية', creditHours: 3 },
+                    { name: 'افات النباتات الطبية والعطرية', creditHours: 3 },
+                    { name: 'افات وأمراض نحل العسل وديدان الحرير', creditHours: 3 }
+                ],
+                autoSelectNames: ['انتاج محاصيل حقلية خاص', 'انتاج محاصيل بستانية خاص', 'ارصاد جوية زراعية'] // Auto-select first 3 subjects
+            },
+            'الانتاج الحيواني': {
+                subjects: [
+                    { name: 'صحة الحيوان والدواجن', creditHours: 3 },
+                    { name: 'تصميم تجارب', creditHours: 2 },
+                    { name: 'حشرات وطفيليات حيوانات المزرعة', creditHours: 3 },
+                    { name: 'اقتصاديات مزارع الانتاج الحيوانى والدواجن', creditHours: 3 },
+                    { name: 'محاصيل العلف والمراعى', creditHours: 3 },
+                    { name: 'وراثة الحيوان الزراعى', creditHours: 3 },
+                    { name: 'تكنولوجيا منتجات الالبان', creditHours: 3 },
+                    { name: 'تكنولوجيا اللحوم والدواجن والاسماك', creditHours: 3 },
+                    { name: 'كيمياء حيوية زراعية', creditHours: 3 },
+                    { name: 'الات ومبانى مزارع الانتاج الحيوانى والدواجن', creditHours: 3 },
+                    { name: 'اساسيات رعاية الحيوان والدواجن', creditHours: 3 },
+                    { name: 'اساسيات فسيولوجيا الحيوان والدواجن', creditHours: 3 },
+                    { name: 'اساسيات تغذية الحيوان والدواجن', creditHours: 3 },
+                    { name: 'اساسيات تربية الحيوان والدواجن', creditHours: 3 },
+                    { name: 'تكوين علائق الحيوان', creditHours: 3 },
+                    { name: 'فسيولوجيا التكاثر والهرمونات فى الحيوان', creditHours: 3 },
+                    { name: 'رعاية و نظم الانتاج الحيوانى', creditHours: 3 },
+                    { name: 'تربية وتحسين الحيوان', creditHours: 3 },
+                    { name: 'المزارع السمكية', creditHours: 3 },
+                    { name: 'إنتاج ماشية اللبن واللحم', creditHours: 3 },
+                    { name: 'إنتاج الأغنام والماعز', creditHours: 3 },
+                    { name: 'تكنولوجيا مواد العلف', creditHours: 3 },
+                    { name: 'إنتاج الإبل', creditHours: 3 },
+                    { name: 'تغذية الدواجن', creditHours: 3 },
+                    { name: 'فسيولوجيا التكاثر والهرمونات فى الدواجن', creditHours: 3 },
+                    { name: 'رعاية و نظم انتاج الدواجن', creditHours: 3 },
+                    { name: 'تربية وتحسين الدواجن', creditHours: 3 },
+                    { name: 'انتاج الدواجن فى المناطق الحاره', creditHours: 3 },
+                    { name: 'تجهيز وتصنيع وتحليل أعلاف الدواجن', creditHours: 3 },
+                    { name: 'انتاج امهات و جدات اللحم و البيض', creditHours: 3 },
+                    { name: 'انتاج الاسماك', creditHours: 3 }
+                ],
+                
+            }
+        };
+
+        // Get DOM elements
+        const departmentSelect = document.getElementById('departmentSelect');
+        const predefinedSubjectSelect = document.getElementById('predefinedSubjectSelect');
+        const addSelectedSubjectBtn = document.getElementById('addSelectedSubjectBtn');
+        const subjectsListDiv = document.getElementById('subjectsList');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const totalGPADisplay = document.getElementById('totalGPA');
+        const totalPercentageDisplay = document.getElementById('totalPercentage');
+        const noSubjectsMessage = document.getElementById('noSubjectsMessage');
+
+        /**
+         * Determines the grade, GPA points, and uses the actual result for percentage.
+         * This function implements the logic from the provided image for grade ranges,
+         * and assigns specific GPA points based on a common 4.0 scale,
+         * while using the exact numerical result for the percentage.
+         * @param {number} result - The numerical result for the subject (0-100).
+         * @returns {object} An object containing the grade, gpa, and percentage.
+         */
+        function getGradeInfoFromResult(result) {
+            let grade = 'F';
+            let gpa = 0.0;
+
+            if (result >= 95) { grade = 'A+'; gpa = 4.0; }
+            else if (result >= 90) { grade = 'A'; gpa = 3.7; }
+            else if (result >= 85) { grade = 'A-'; gpa = 3.3; }
+            else if (result >= 80) { grade = 'B+'; gpa = 3.0; }
+            else if (result >= 75) { grade = 'B'; gpa = 2.7; }
+            else if (result >= 70) { grade = 'C+'; gpa = 2.3; }
+            else if (result >= 65) { grade = 'C'; gpa = 2.0; }
+            else if (result >= 60) { grade = 'D+'; gpa = 1.3; }
+            else if (result >= 55) { grade = 'D'; gpa = 1.0; }
+            else if (result >= 50) { grade = 'D-'; gpa = 0.7; }
+            else { grade = 'F'; gpa = 0.0; }
+
+            // The percentage for calculation should be the actual result
+            return { grade: grade, gpa: gpa, percentage: result };
+        }
+
+        /**
+         * Populates the department dropdown with available departments.
+         */
+        function populateDepartments() {
+            // Clear existing options first, except the default placeholder
+            departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
+            for (const deptName in departmentsData) {
+                const option = document.createElement('option');
+                option.value = deptName;
+                option.textContent = deptName;
+                departmentSelect.appendChild(option);
+            }
+        }
+
+        /**
+         * Helper function to add a subject to selectedSubjects if not already present.
+         * @param {object} subjectToAdd - The subject object to add.
+         */
+        function addSubjectToSelectedList(subjectToAdd) {
+            const isAlreadyAdded = selectedSubjects.some(s => s.name === subjectToAdd.name && s.creditHours === subjectToAdd.creditHours);
+            if (!isAlreadyAdded) {
+                const newSubject = {
+                    id: nextSubjectId++,
+                    name: subjectToAdd.name,
+                    creditHours: subjectToAdd.creditHours,
+                    result: undefined // Default undefined result
+                };
+                selectedSubjects.push(newSubject);
+            }
+        }
+
+        /**
+         * Populates the predefined subject dropdown based on the selected department.
+         * Also handles auto-selecting subjects for the chosen department and adds optional subjects.
+         */
+        function populateAndAutoSelectSubjectsForDepartment() {
+            const selectedDepartmentName = departmentSelect.value;
+            predefinedSubjectSelect.innerHTML = '<option value="">اختر مادة</option>'; // Clear existing options
+
+            // Always clear selected subjects when department changes
+            selectedSubjects = [];
+            nextSubjectId = 0; // Reset ID counter
+
+            // 1. Always auto-select common subjects
+            commonSubjects.forEach(subject => {
+                addSubjectToSelectedList(subject);
+            });
+
+            if (selectedDepartmentName) {
+                const departmentInfo = departmentsData[selectedDepartmentName];
+                
+                // 2. Auto-select subjects specific to the chosen department
+                if (departmentInfo && departmentInfo.autoSelectNames) {
+                    departmentInfo.autoSelectNames.forEach(autoSubjectName => {
+                        const subjectToAdd = departmentInfo.subjects.find(s => s.name === autoSubjectName);
+                        if (subjectToAdd) {
+                            addSubjectToSelectedList(subjectToAdd);
+                        }
+                    });
+                }
+
+                // Populate the dropdown with subjects from the selected department
+                if (departmentInfo && departmentInfo.subjects) {
+                    departmentInfo.subjects.forEach((subject, index) => {
+                        const option = document.createElement('option');
+                        option.value = `${selectedDepartmentName}-${index}`; // Prefix for department subjects
+                        option.textContent = `${subject.name} (${subject.creditHours} ساعة معتمدة)`;
+                        predefinedSubjectSelect.appendChild(option);
+                    });
+                }
+            }
+
+            // 3. Add optional subjects to the dropdown (available for all departments)
+            optionalSubjects.forEach((subject, index) => {
+                const option = document.createElement('option');
+                option.value = `optional-${index}`; // Unique prefix for optional subjects
+                option.textContent = `${subject.name} (اختياري - ${subject.creditHours} ساعة معتمدة)`;
+                predefinedSubjectSelect.appendChild(option);
+            });
+
+            renderSelectedSubjects(); // Re-render the list after auto-selection
+            calculateGPAAndPercentage(); // Recalculate after adding auto-selected subjects
+        }
+
+        /**
+         * Renders the list of selected subjects in the UI.
+         * Clears existing list and re-renders based on the 'selectedSubjects' array.
+         */
+        function renderSelectedSubjects() {
+            subjectsListDiv.innerHTML = ''; // Clear current list
+            if (selectedSubjects.length === 0) {
+                noSubjectsMessage.style.display = 'block'; // Show message if no subjects
+            } else {
+                noSubjectsMessage.style.display = 'none'; // Hide message if subjects exist
+                selectedSubjects.forEach(subject => {
+                    const subjectDiv = document.createElement('div');
+                    subjectDiv.id = `subject-${subject.id}`; // Unique ID for the subject div
+                    subjectDiv.className = 'flex flex-col md:flex-row items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm';
+
+                    subjectDiv.innerHTML = `
+                        <div class="flex-1 mb-2 md:mb-0 md:ml-4 text-lg font-medium text-gray-700 text-right"> <!-- Adjusted for RTL -->
+                            ${subject.name} (<span class="font-bold">${subject.creditHours}</span> ساعة معتمدة)
+                        </div>
+                        <div class="flex items-center">
+                            <label for="result-${subject.id}" class="ml-2 text-gray-600">النتيجة (من 100):</label> <!-- Changed label -->
+                            <input type="number" id="result-${subject.id}" data-subject-id="${subject.id}"
+                                   class="result-input p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-24 text-center"
+                                   min="0" max="100" value="${subject.result !== undefined ? subject.result : ''}"> <!-- Changed to input type number -->
+                            <button data-subject-id="${subject.id}"
+                                    class="delete-subject-btn mr-4 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-300 ease-in-out shadow-sm"> <!-- Adjusted for RTL -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 4a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    subjectsListDiv.appendChild(subjectDiv);
+                });
+
+                // Attach event listeners to newly rendered elements
+                document.querySelectorAll('.result-input').forEach(input => {
+                    // Use 'input' event for real-time updates as user types
+                    input.addEventListener('input', handleResultChange);
+                });
+                document.querySelectorAll('.delete-subject-btn').forEach(button => {
+                    button.addEventListener('click', handleDeleteSubject);
+                });
+            }
+        }
+
+        /**
+         * Handles adding a selected predefined subject to the list.
+         */
+        function addSelectedSubject() {
+            const selectedOptionValue = predefinedSubjectSelect.value;
+
+            if (selectedOptionValue === '') {
+                showMessageBox('الرجاء اختيار مادة لإضافتها.', 'تحذير');
+                return;
+            }
+
+            let subjectToAdd;
+            if (selectedOptionValue.startsWith('optional-')) {
+                const index = parseInt(selectedOptionValue.split('-')[1]);
+                subjectToAdd = optionalSubjects[index];
+            } else {
+                const [deptName, subjectIndex] = selectedOptionValue.split('-');
+                subjectToAdd = departmentsData[deptName].subjects[parseInt(subjectIndex)];
+            }
+
+            // Use the helper function to add subject and prevent duplicates
+            addSubjectToSelectedList(subjectToAdd);
+
+            renderSelectedSubjects(); // Re-render the list
+            predefinedSubjectSelect.value = ''; // Reset dropdown
+            calculateGPAAndPercentage(); // Recalculate after adding a new subject
+        }
+
+        /**
+         * Handles the input event for result input fields.
+         * Updates the result for the corresponding subject in the 'selectedSubjects' array.
+         * @param {Event} event - The input event object.
+         */
+        function handleResultChange(event) {
+            const subjectId = parseInt(event.target.dataset.subjectId);
+            let newResult = parseFloat(event.target.value);
+
+            // Basic validation for result
+            if (isNaN(newResult) || newResult < 0 || newResult > 100) {
+                newResult = undefined; // Set to undefined if invalid
+                // Optionally, you could show a message here, but the input type="number" with min/max helps
+            }
+
+            const subjectIndex = selectedSubjects.findIndex(s => s.id === subjectId);
+            if (subjectIndex !== -1) {
+                selectedSubjects[subjectIndex].result = newResult;
+                // Recalculate GPA immediately as results change
+                calculateGPAAndPercentage();
+            }
+        }
+
+        /**
+         * Handles deleting a subject from the list.
+         * @param {Event} event - The click event object.
+         */
+        function handleDeleteSubject(event) {
+            const subjectId = parseInt(event.currentTarget.dataset.subjectId);
+            selectedSubjects = selectedSubjects.filter(s => s.id !== subjectId);
+            renderSelectedSubjects(); // Re-render the list after deletion
+            calculateGPAAndPercentage(); // Recalculate if a subject is removed
+        }
+
+        /**
+         * Calculates the total GPA and percentage based on the selectedSubjects array.
+         * Updates the display elements with the calculated values.
+         */
+        function calculateGPAAndPercentage() {
+            let totalGradePoints = 0;
+            let totalPercentagePoints = 0;
+            let totalCreditHours = 0;
+
+            selectedSubjects.forEach(subject => {
+                // Only include subjects with a valid numerical result
+                if (subject.result !== undefined && !isNaN(subject.result)) {
+                    const gradeInfo = getGradeInfoFromResult(subject.result);
+                    totalGradePoints += gradeInfo.gpa * subject.creditHours;
+                    totalPercentagePoints += gradeInfo.percentage * subject.creditHours; // Use actual result for percentage
+                    totalCreditHours += subject.creditHours;
+                }
+            });
+
+            const calculatedGPA = totalCreditHours > 0 ? (totalGradePoints / totalCreditHours).toFixed(2) : '0.00';
+            const calculatedPercentage = totalCreditHours > 0 ? (totalPercentagePoints / totalCreditHours).toFixed(2) : '0.00';
+
+            totalGPADisplay.textContent = calculatedGPA;
+            totalPercentageDisplay.textContent = `${calculatedPercentage}%`;
+        }
+
+        /**
+         * Displays a custom message box.
+         * @param {string} message - The message to display.
+         * @param {string} title - The title of the message box.
+         */
+        function showMessageBox(message, title = 'رسالة') {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+                    <h3 class="text-xl font-bold mb-4">${title}</h3>
+                    <p class="mb-6">${message}</p>
+                    <button class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out" onclick="this.closest('.fixed').remove()">
+                        حسناً
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+
+        // Event Listeners
+        departmentSelect.addEventListener('change', () => {
+            // Clear currently selected subjects when department changes
+            selectedSubjects = [];
+            nextSubjectId = 0; // Reset ID counter
+            populateAndAutoSelectSubjectsForDepartment();
+        });
+        addSelectedSubjectBtn.addEventListener('click', addSelectedSubject);
+        calculateBtn.addEventListener('click', calculateGPAAndPercentage);
+
+        // Initial setup when the page loads
+        populateDepartments();
+        // Select the first department by default and trigger its change event
+        if (Object.keys(departmentsData).length > 0) {
+            departmentSelect.value = Object.keys(departmentsData)[0];
+            populateAndAutoSelectSubjectsForDepartment();
+        }
+    </script>
+</body>
+</html>
